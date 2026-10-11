@@ -1,0 +1,14 @@
+{
+  "name": "ai-editor-worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI Code Editor - Cloudflare Worker backend (Workers AI)",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^3.80.0"
+  }
+}

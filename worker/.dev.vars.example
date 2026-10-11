@@ -1,0 +1,2 @@
+# 复制本文件为 .dev.vars 后可覆盖默认模型（wrangler dev 本地开发时生效）
+AI_MODEL=@cf/meta/llama-3.1-8b-instruct
