@@ -1,8 +1,8 @@
 /**
  * AI Code Editor — Cloudflare Worker 后端
  *
- * 纯 API 后端：Cloudflare Workers AI binding，前端客户端独立部署于项目根目录，
- * 通过 CORS 跨域访问本服务的接口。
+ * 纯 API 后端：仅提供 AI 接口（代码补全 / 解释 / 生成），前端为本地程序
+ * （项目根目录 index.html，独立打开），通过 CORS 跨域访问本服务的接口。
  *
  * 路由：
  *   GET  /api/health          健康检查
@@ -217,7 +217,7 @@ export default {
 	async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
 		const url = new URL(request.url);
 
-		// 后端仅提供 API；前端客户端已独立部署到项目根目录（不再由 Worker 托管静态资源）
+		// 后端仅提供 API；前端为本地程序（项目根目录 index.html），不再由 Worker 托管静态资源
 		if (!url.pathname.startsWith("/api/")) {
 			return json({ error: "Not found. This Worker serves API only." }, 404);
 		}
