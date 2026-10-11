@@ -1,0 +1,28 @@
+{
+	"name": "ai-code-editor-worker",
+	"description": "AI Code Editor backend powered by Cloudflare Workers AI (code completion / explanation / generation)",
+	"cloudflare": {
+		"label": "AI Code Editor",
+		"products": [
+			"Workers",
+			"Workers AI"
+		],
+		"categories": [
+			"ai"
+		],
+		"docs_url": "https://developers.cloudflare.com/workers-ai/"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^4.20260507.1",
+		"typescript": "5.9.3",
+		"wrangler": "4.88.0"
+	},
+	"private": true,
+	"scripts": {
+		"cf-typegen": "wrangler types",
+		"check": "tsc --noEmit && wrangler deploy --dry-run",
+		"deploy": "wrangler deploy",
+		"dev": "wrangler dev",
+		"start": "wrangler dev"
+	}
+}
