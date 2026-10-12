@@ -60,3 +60,12 @@ export interface GenerateRequest {
 	prompt: string;
 	language?: string;
 }
+
+/**
+ * Request body for POST /api/chat
+ * 与模板 src/types.ts 的 ChatMessage 定义一致：
+ * 发送方提交完整 messages 数组，由后端自动注入 system prompt。
+ */
+export interface ChatRequest {
+	messages: ChatMessage[];
+}

@@ -9,18 +9,24 @@
  *   POST /api/complete        代码补全
  *   POST /api/explain         代码解释
  *   POST /api/generate        代码生成
+ *   POST /api/chat            聊天对话（messages 数组，对齐模板 /api/chat）
  */
 import {
 	Env,
 	CompleteRequest,
 	ExplainRequest,
 	GenerateRequest,
+	ChatRequest,
 	ChatMessage,
 } from "./types";
 
 // Default model ID for Workers AI.
 // https://developers.cloudflare.com/workers-ai/models/
 const DEFAULT_MODEL_ID = "@cf/meta/llama-3.1-8b-instruct";
+
+// Default system prompt（与模板 src/index.ts 保持一致，/api/chat 自动注入）
+const SYSTEM_PROMPT =
+	"You are a helpful, friendly assistant. Provide concise and accurate responses.";
 
 // CORS headers so the frontend can be hosted separately from the Worker.
 const CORS_HEADERS = {
@@ -208,6 +214,27 @@ async function handleGenerate(request: Request, env: Env): Promise<Response> {
 	return json({ code: result.text, model: modelId(env) });
 }
 
+/* ---------- /api/chat（对齐模板 src/index.ts 的聊天接口） ---------- */
+
+async function handleChat(request: Request, env: Env): Promise<Response> {
+	const body = (await request.json().catch(() => ({}))) as Partial<ChatRequest>;
+	// 与模板一致：请求体为 { messages: ChatMessage[] }，缺省按 400 处理
+	if (!Array.isArray(body.messages) || body.messages.length === 0) {
+		return json({ error: "缺少 messages 字段（对话消息数组）" }, 400);
+	}
+	// 与模板一致：消息中无 system 时自动注入默认 system prompt
+	const messages: ChatMessage[] = [...body.messages];
+	if (!messages.some((msg) => msg.role === "system")) {
+		messages.unshift({ role: "system", content: SYSTEM_PROMPT });
+	}
+
+	// 本后端为非流式实现：一次返回完整回复，字段为 content（类型与模板 ChatMessage.content 对齐）
+	const result = await runAI(env, messages, { max_tokens: 1024, temperature: 0.7 });
+	if (!result.ok) return json({ error: result.error }, 502);
+
+	return json({ content: result.text, model: modelId(env) });
+}
+
 /* ---------- Worker 入口 ---------- */
 
 export default {
@@ -250,9 +277,14 @@ export default {
 			return new Response("Method not allowed", { status: 405 });
 		}
 
+		if (url.pathname === "/api/chat") {
+			if (request.method === "POST") return handleChat(request, env);
+			return new Response("Method not allowed", { status: 405 });
+		}
+
 		// Handle 404 for unmatched API routes
 		return json(
-			{ error: "Not found", paths: ["/api/health", "/api/complete", "/api/explain", "/api/generate"] },
+			{ error: "Not found", paths: ["/api/health", "/api/complete", "/api/explain", "/api/generate", "/api/chat"] },
 			404,
 		);
 	},

@@ -1,4 +1,0 @@
-# 复制本文件为 .dev.vars 后可覆盖本地开发配置（wrangler dev 时生效）
-# 部署后如需覆盖，请在 Cloudflare Dashboard -> Workers -> 设置 -> 变量 中配置同名变量
-AI_MODEL=@cf/meta/llama-3.1-8b-instruct
-API_KEY=
