@@ -14,8 +14,8 @@ const statusText = document.getElementById("status-text");
 const chatTitle = document.getElementById("chat-title");
 const newChatBtn = document.getElementById("new-chat-btn");
 const conversationList = document.getElementById("conversation-list");
-const sidebar = document.getElementById("sidebar");
-const toggleSidebarBtn = document.getElementById("toggle-sidebar-btn");
+const conversationModal = document.getElementById("conversation-modal");
+const closeModalBtn = document.getElementById("modal-close-btn");
 const menuBtn = document.getElementById("menu-btn");
 const downloadButton = document.getElementById("download-btn");
 const uploadFileBtn = document.getElementById("upload-file-btn");
@@ -80,6 +80,7 @@ function switchConversation(id) {
 	saveCurrentId();
 	renderConversationList();
 	renderMessages();
+	closeConversationModal();
 }
 function deleteConversation(id) {
 	if (isProcessing) return;
@@ -324,6 +325,7 @@ sendButton.addEventListener("click", sendMessage);
 newChatBtn.addEventListener("click", () => {
 	if (isProcessing) return;
 	createConversation();
+	closeConversationModal();
 });
 clearButton.addEventListener("click", () => {
 	if (isProcessing) return;
@@ -336,11 +338,20 @@ clearButton.addEventListener("click", () => {
 	renderConversationList();
 	renderMessages();
 });
-toggleSidebarBtn.addEventListener("click", () => {
-	sidebar.classList.toggle("collapsed");
+function openConversationModal() {
+	renderConversationList();
+	conversationModal.classList.add("open");
+}
+function closeConversationModal() {
+	conversationModal.classList.remove("open");
+}
+menuBtn.addEventListener("click", openConversationModal);
+closeModalBtn.addEventListener("click", closeConversationModal);
+conversationModal.addEventListener("click", (e) => {
+	if (e.target === conversationModal) closeConversationModal();
 });
-menuBtn.addEventListener("click", () => {
-	sidebar.classList.toggle("collapsed");
+document.addEventListener("keydown", (e) => {
+	if (e.key === "Escape") closeConversationModal();
 });
 // ---------- 文件上传 ----------
 uploadFileBtn.addEventListener("click", () => {
