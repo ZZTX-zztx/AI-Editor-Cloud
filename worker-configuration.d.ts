@@ -7,4 +7,15 @@ interface Env {
 	AI: Ai;
 	AI_MODEL: string;
 	API_KEY: string;
+	APP_VERSION_CODE: string;
+	APP_VERSION_NAME: string;
+	APP_DOWNLOAD_URL: string;
+	APP_CHANGELOG: string;
+	APP_FORCE_UPDATE: string;
+	APP_MIN_SDK: string;
+	WIN_VERSION_CODE: string;
+	WIN_VERSION_NAME: string;
+	WIN_DOWNLOAD_URL: string;
+	WIN_CHANGELOG: string;
+	WIN_FORCE_UPDATE: string;
 }

@@ -14,9 +14,79 @@ export interface Env {
 	AI_MODEL: string;
 
 	/**
+	 * KV namespace for chat storage (aligned with template; reserved for future use).
+	 */
+	CHAT_KV?: KVNamespace;
+
+	/**
+	 * Chat room identifier (aligned with template; reserved for future use).
+	 */
+	ROOM_ID?: string;
+
+	/**
+	 * Maximum number of messages to retain (aligned with template; reserved for future use).
+	 */
+	MAX_MESSAGES?: string;
+
+	/**
 	 * Optional API key for authenticating requests (reserved, not enforced).
 	 */
 	API_KEY: string;
+
+	/**
+	 * App version code (integer as string). Compared with Android versionCode.
+	 */
+	APP_VERSION_CODE: string;
+
+	/**
+	 * App version name for display.
+	 */
+	APP_VERSION_NAME: string;
+
+	/**
+	 * APK download URL.
+	 */
+	APP_DOWNLOAD_URL: string;
+
+	/**
+	 * Update changelog text.
+	 */
+	APP_CHANGELOG: string;
+
+	/**
+	 * Whether the update is mandatory ("true" / "false").
+	 */
+	APP_FORCE_UPDATE: string;
+
+	/**
+	 * Android minimum SDK version.
+	 */
+	APP_MIN_SDK: string;
+
+	/**
+	 * Windows version code (integer as string).
+	 */
+	WIN_VERSION_CODE: string;
+
+	/**
+	 * Windows version name for display.
+	 */
+	WIN_VERSION_NAME: string;
+
+	/**
+	 * Windows download URL.
+	 */
+	WIN_DOWNLOAD_URL: string;
+
+	/**
+	 * Windows update changelog text.
+	 */
+	WIN_CHANGELOG: string;
+
+	/**
+	 * Whether the Windows update is mandatory ("true" / "false").
+	 */
+	WIN_FORCE_UPDATE: string;
 }
 
 /**

@@ -9,7 +9,10 @@
     "binding": "AI"
   },
   "vars": {
-    "AI_MODEL": "@cf/meta/llama-3.1-8b-instruct",
+    "AI_MODEL": "@cf/meta/llama-3.1-8b-instruct-fp8",
     "API_KEY": ""
-  }
+  },
+  "routes": [
+    { "pattern": "ai-editor.zztxer.dpdns.org", "custom_domain": true }
+  ]
 }

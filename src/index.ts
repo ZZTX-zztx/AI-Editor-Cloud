@@ -10,19 +10,19 @@
  *   POST /api/explain         代码解释
  *   POST /api/generate        代码生成
  *   POST /api/chat            聊天对话（messages 数组，对齐模板 /api/chat）
+ *   GET  /api/vars[/app|/win] 版本/更新信息（对齐模板 /api/vars）
  */
 import {
 	Env,
 	CompleteRequest,
 	ExplainRequest,
 	GenerateRequest,
-	ChatRequest,
 	ChatMessage,
 } from "./types";
 
 // Default model ID for Workers AI.
 // https://developers.cloudflare.com/workers-ai/models/
-const DEFAULT_MODEL_ID = "@cf/meta/llama-3.1-8b-instruct";
+const DEFAULT_MODEL_ID = "@cf/meta/llama-3.1-8b-instruct-fp8";
 
 // Default system prompt（与模板 src/index.ts 保持一致，/api/chat 自动注入）
 const SYSTEM_PROMPT =
@@ -214,25 +214,70 @@ async function handleGenerate(request: Request, env: Env): Promise<Response> {
 	return json({ code: result.text, model: modelId(env) });
 }
 
-/* ---------- /api/chat（对齐模板 src/index.ts 的聊天接口） ---------- */
+/* ---------- /api/chat（对齐模板 src/index.ts 的聊天接口，SSE 流式） ---------- */
 
 async function handleChat(request: Request, env: Env): Promise<Response> {
-	const body = (await request.json().catch(() => ({}))) as Partial<ChatRequest>;
-	// 与模板一致：请求体为 { messages: ChatMessage[] }，缺省按 400 处理
-	if (!Array.isArray(body.messages) || body.messages.length === 0) {
-		return json({ error: "缺少 messages 字段（对话消息数组）" }, 400);
+	try {
+		// 与模板一致：请求体为 { messages: ChatMessage[] }，缺省为空数组
+		const { messages = [] } = (await request.json()) as {
+			messages: ChatMessage[];
+		};
+
+		// 与模板一致：消息中无 system 时自动注入默认 system prompt
+		if (!messages.some((msg) => msg.role === "system")) {
+			messages.unshift({ role: "system", content: SYSTEM_PROMPT });
+		}
+
+		// 与模板一致：max_tokens 1024、stream: true，直接透传 Workers AI 的 SSE 流。
+		const stream = (await env.AI.run(
+			modelId(env) as string,
+			{
+				messages,
+				max_tokens: 1024,
+				stream: true,
+			} as AiTextGenerationInput & { stream: true },
+		)) as unknown as ReadableStream;
+		return new Response(stream, {
+			headers: {
+				"content-type": "text/event-stream; charset=utf-8",
+				"cache-control": "no-cache",
+				connection: "keep-alive",
+				...CORS_HEADERS,
+			},
+		});
+	} catch (error) {
+		// 与模板一致：记录错误并返回 500
+		console.error("Error processing chat request:", error);
+		return json({ error: "Failed to process request" }, 500);
 	}
-	// 与模板一致：消息中无 system 时自动注入默认 system prompt
-	const messages: ChatMessage[] = [...body.messages];
-	if (!messages.some((msg) => msg.role === "system")) {
-		messages.unshift({ role: "system", content: SYSTEM_PROMPT });
+}
+
+/**
+ * Handles app version / update info requests.
+ * Returns platform-specific vars configured in wrangler.jsonc so clients
+ * can check for updates. (与模板 src/index.ts 的 handleVarsRequest 一致)
+ * - platform "app": Android (APP_*) vars
+ * - platform "win": Windows (WIN_*) vars
+ */
+function handleVarsRequest(env: Env, platform: "app" | "win"): Response {
+	if (platform === "win") {
+		return json({
+			WIN_VERSION_CODE: env.WIN_VERSION_CODE ?? "1",
+			WIN_VERSION_NAME: env.WIN_VERSION_NAME ?? "1.0",
+			WIN_DOWNLOAD_URL: env.WIN_DOWNLOAD_URL ?? "",
+			WIN_CHANGELOG: env.WIN_CHANGELOG ?? "",
+			WIN_FORCE_UPDATE: env.WIN_FORCE_UPDATE ?? "false",
+		});
 	}
 
-	// 本后端为非流式实现：一次返回完整回复，字段为 content（类型与模板 ChatMessage.content 对齐）
-	const result = await runAI(env, messages, { max_tokens: 1024, temperature: 0.7 });
-	if (!result.ok) return json({ error: result.error }, 502);
-
-	return json({ content: result.text, model: modelId(env) });
+	return json({
+		APP_VERSION_CODE: env.APP_VERSION_CODE ?? "1",
+		APP_VERSION_NAME: env.APP_VERSION_NAME ?? "1.0",
+		APP_DOWNLOAD_URL: env.APP_DOWNLOAD_URL ?? "",
+		APP_CHANGELOG: env.APP_CHANGELOG ?? "",
+		APP_FORCE_UPDATE: env.APP_FORCE_UPDATE ?? "false",
+		APP_MIN_SDK: env.APP_MIN_SDK ?? "24",
+	});
 }
 
 /* ---------- Worker 入口 ---------- */
@@ -282,9 +327,24 @@ export default {
 			return new Response("Method not allowed", { status: 405 });
 		}
 
+		// 与模板一致：版本 / 更新信息接口（app 与 win 平台各自独立）
+		if (url.pathname === "/api/vars" || url.pathname === "/api/vars/app") {
+			if (request.method === "GET") {
+				return handleVarsRequest(env, "app");
+			}
+			return new Response("Method not allowed", { status: 405 });
+		}
+
+		if (url.pathname === "/api/vars/win") {
+			if (request.method === "GET") {
+				return handleVarsRequest(env, "win");
+			}
+			return new Response("Method not allowed", { status: 405 });
+		}
+
 		// Handle 404 for unmatched API routes
 		return json(
-			{ error: "Not found", paths: ["/api/health", "/api/complete", "/api/explain", "/api/generate", "/api/chat"] },
+			{ error: "Not found", paths: ["/api/health", "/api/complete", "/api/explain", "/api/generate", "/api/chat", "/api/vars"] },
 			404,
 		);
 	},
